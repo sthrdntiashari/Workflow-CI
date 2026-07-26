@@ -1,0 +1,38 @@
+name: ML Model CI
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  train-and-log:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install MLflow and dependencies
+        run: |
+          pip install mlflow==2.14.1 scikit-learn==1.5.0 pandas==2.2.2 numpy==1.26.4 "setuptools<81"
+
+      - name: Run MLflow Project (training)
+        working-directory: MLProject
+        run: |
+          mlflow run . --env-manager=local
+
+      - name: Commit and push mlruns artifact back to repo
+        working-directory: MLProject
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add mlruns -f
+          git diff --staged --quiet || git commit -m "CI: update model artifacts [skip ci]"
+          git push
