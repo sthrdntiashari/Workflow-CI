@@ -2,6 +2,12 @@
 modelling.py (versi untuk MLflow Project / CI)
 Melatih model Random Forest untuk prediksi Customer Churn.
 Dipanggil oleh MLflow Project melalui file 'MLProject'.
+
+CATATAN PENTING:
+Saat dijalankan lewat 'mlflow run', MLflow SUDAH membuat run aktif secara
+otomatis. Jadi di sini kita TIDAK perlu (dan TIDAK BOLEH) memanggil
+mlflow.set_experiment() atau mlflow.start_run() secara manual lagi,
+karena akan menyebabkan konflik run ID.
 """
 
 import argparse
@@ -32,31 +38,30 @@ def main():
     parser.add_argument("--max_depth", type=int, default=10)
     args = parser.parse_args()
 
-    mlflow.set_tracking_uri("file:./mlruns")
-    mlflow.set_experiment("Telco_Customer_Churn_CI")
+    # Aktifkan autolog -> otomatis mencatat parameter, metrik, dan model
+    # ke run yang sudah aktif dari 'mlflow run'
     mlflow.sklearn.autolog()
 
     X_train, X_test, y_train, y_test = load_data(args.data_path)
 
-    with mlflow.start_run(run_name="ci_random_forest"):
-        model = RandomForestClassifier(
-            n_estimators=args.n_estimators,
-            max_depth=args.max_depth,
-            random_state=42
-        )
-        model.fit(X_train, y_train)
-        y_pred = model.predict(X_test)
+    model = RandomForestClassifier(
+        n_estimators=args.n_estimators,
+        max_depth=args.max_depth,
+        random_state=42
+    )
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
 
-        acc = accuracy_score(y_test, y_pred)
-        prec = precision_score(y_test, y_pred)
-        rec = recall_score(y_test, y_pred)
-        f1 = f1_score(y_test, y_pred)
+    acc = accuracy_score(y_test, y_pred)
+    prec = precision_score(y_test, y_pred)
+    rec = recall_score(y_test, y_pred)
+    f1 = f1_score(y_test, y_pred)
 
-        print("=== Hasil Evaluasi Model (CI) ===")
-        print(f"Accuracy  : {acc:.4f}")
-        print(f"Precision : {prec:.4f}")
-        print(f"Recall    : {rec:.4f}")
-        print(f"F1-Score  : {f1:.4f}")
+    print("=== Hasil Evaluasi Model (CI) ===")
+    print(f"Accuracy  : {acc:.4f}")
+    print(f"Precision : {prec:.4f}")
+    print(f"Recall    : {rec:.4f}")
+    print(f"F1-Score  : {f1:.4f}")
 
 
 if __name__ == "__main__":
